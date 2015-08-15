@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import mixins
+from rest_framework import generics
 from snippets.models import Snippet
 from snippets.serializers import SnippetSerializer
 
@@ -27,6 +29,7 @@ def snippet_list(request, format=None):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, staus=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET', 'POST', 'DELETE'])
 def snippet_detail(request, pk, format=None):
@@ -55,47 +58,34 @@ def snippet_detail(request, pk, format=None):
         snippet.delete()
         return Response(staus=status.HTTP_204_NO_CONTENT)
 
-class SnippetList(APIView):
+
+class SnippetList(generics.GenericAPIView,
+                  mixins.ListModelMixin,
+                  mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin):
     """
     List all snippet or create a new snippet.
     """
-    def get(self, request, format=None):
-        snippets = Snippet.objects.all()
-        serializer = SnippetSerializer(snippets, many=True)
-        return Response(serializer.data)
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
 
-    def post(self, request, format=None):
-        serializer = SnippetSerializer(request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
 
 
-class SnippetDetail(APIView):
-    def get_object(self, pk):
-        try:
-            return Snippet.objects.get(pk=pk)
-        except Snippet.DoesNotExist:
-            raise Http404
+class SnippetDetail(mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.GenericAPIView):
 
-    def get(self, request, pk, format=None):
-        snippet = self.get_object(pk)
-        serializer = SnippetSerializer(snippet)
-        return Response(serializer.data)
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
-    def put(self, request, pk, format=None):
-        snippet = self.get_object(pk)
-        seriazlier = SnippetSerializer(snippet, data=request.data)
-        if seriazlier.is_valid():
-            seriazlier.save()
-            return Response(seriazlier.data)
-        return Response(seriazlier.errors,
-                        status = status.HTTP_400_BAD_REQUEST)
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
-    def delete(self, reequest, pk, format=None):
-        snippet = self.get_object(pk)
-        snippet.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-def index(request):
-    return HttpResponse('This will render a simple http response')
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
