@@ -23,37 +23,110 @@ class Choice(models.Model):
     def __str__(self):
         return self.choice_text
 
+class Reader(models.Model):
+    comment = models.CharField(max_length=300)
+    question = models.ForeignKey(Question)
 
-class WriterStatusTypeEnum(models.CharField):
-    choices = (
-        ('new:contact_info_sent', 'new:contact_info_sent'),
-        ('new:e_mail_confirmed', 'new:e_mail_confirmed'),
-        ('new:test_started', 'new:test_started'),
-        ('new:test_passed', 'new:test_passed'),
-        ('new:file_sent', 'new:file_sent'),
-        ('active:general', 'active:general'),
-        ('active:advanced', 'active:advanced'),
-        ('active:senior_advanced', 'active:senior_advanced'),
-        ('active:premium', 'active:premium'),
-        ('active:top_premium', 'active:top_premium'),
-        ('active:first_class', 'active:first_class'),
-        ('failed:test_essay', 'failed:test_essay'),
-        ('failed:no_test_essay', 'failed:no_test_essay'),
-        ('failed:gammar_test', 'failed:gammar_test'),
-        ('fired:low_quality', 'fired:low_quality'),
-        ('fired:plagiarism', 'fired:plagiarism'),
-        ('fired:unreliable_writer', 'fired:unreliable_writer'),
-        ('fired:invalid_phone', 'fired:invalid_phone'),
-        ('fired:multiple_accounts', 'fired:multiple_accounts'),
-        ('fired:inappropriate_behavior', 'fired:inappropriate_behavior'),
-        ('fired:deactivated_by_writer', 'fired:deactivated_by_writer'),
-        ('fired:writer_is_idle', 'fired:writer_is_idle'),
-        ('fired:fraud', 'fired:fraud'),
-        ('fired:other', 'fired:other'),
+    def __str__(self):
+        return self.comment
+
+class Topping(models.Model):
+    pass
+
+class Pizza(models.Model):
+    toppings = models.ManyToManyField(Topping)
+
+##############
+# Tutorial: django site
+# https://docs.djangoproject.com/en/1.8/topics/db/models/
+
+class Musician(models.Model):
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    instrument = models.CharField(max_length=100)
+
+class Album(models.Model):
+    artist = models.ForeignKey(Musician, related_name='musicant', related_query_name='musicants')
+    name = models.CharField(max_length=100)
+    release_date = models.DateField()
+    num_start = models.IntegerField()
+
+class Person(models.Model):
+    SHIRT_SIZES = (
+        ('S', 'Small'),
+        ('M', 'Medium'),
+        ('L', 'Large'),
     )
+    name = models.CharField(max_length=60)
+    shirt_size = models.CharField(max_length=1, choices=SHIRT_SIZES)
 
-    def __init__(self, *args, **kwargs):
-        super(WriterStatusTypeEnum, self).__init__(*args, **kwargs)
+#############################
+# learning many to many relationships,
+# using tables for governing relation
+class PersonArtist(models.Model):
+    name = models.CharField(max_length=60)
 
-    def db_type(self, connection):
-        return 'writer_status_type'
+    def __str__(self):
+        return self.name
+
+class Group(models.Model):
+    name = models.CharField(max_length=128)
+    members = models.ManyToManyField(PersonArtist, through='Membership')
+
+    def __str__(self):
+        return self.name
+
+class Membership(models.Model):
+    person = models.ForeignKey(PersonArtist, related_name='membership')
+    group = models.ForeignKey(Group, related_name='membership')
+    date_joined = models.DateField()
+    invite_reason = models.CharField(max_length=64)
+
+
+#############################
+# Multitable inheritance
+# using PersonArtist class
+
+class Moderator(PersonArtist):
+    serves_talk_show = models.BooleanField(default=False)
+    prev_channel = models.CharField(max_length=50)
+
+#############################
+# Making queries
+# https://docs.djangoproject.com/en/1.8/topics/db/queries/#falling-back-to-raw-sql
+
+from django.db import models
+
+class Blog(models.Model):
+    name = models.CharField(max_length=100)
+    tagline = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+class Author(models.Model):
+    name = models.CharField(max_length=50)
+    email = models.EmailField()
+
+    def __str__(self):
+        return self.name
+
+class Entry(models.Model):
+    blog = models.ForeignKey(Blog)
+    headline = models.CharField(max_length=255)
+    body_text = models.TextField()
+    pub_date = models.DateField()
+    mod_date = models.DateField()
+    authors = models.ManyToManyField(Author)
+    n_comments = models.IntegerField()
+    rating = models.IntegerField()
+
+    def __str__(self):
+        return self.headline
+
+
+
+
+
+
+
